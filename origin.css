@@ -1,0 +1,347 @@
+.zk-view-content{
+  background-color: rgba(var(--color-blue-rgb), 0.1);
+}
+
+.zk-index-toolbar{
+  background-color: rgba(var(--color-blue-rgb), 0.2);
+  margin:10px;
+  margin-bottom: 5px;
+  border-radius: 5px;
+}
+
+.zk-index-toolbar-block{
+  float:left;
+  align-items: center;
+  padding: 5px;
+}
+
+.show-graph-div {
+  display: flex;
+}
+
+.zk-index-mermaid-container{
+  margin: 10px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  border-radius: 5px;
+  position: relative;
+}
+
+.zk-index-mermaid{
+  border-radius: 5px;
+}
+.zk-index-mermaid svg{
+  margin-top: 30px;
+}
+.theme-dark .edgePaths{
+  filter: invert(100%) hue-rotate(180deg) saturate(1.25);
+}
+.zk-graph-top{
+  position: relative;
+}
+.zk-index-link{
+  position: absolute;
+  background-color: rgba(var(--color-blue-rgb), 0.2);
+  margin-bottom: 0px;
+  margin-top: 0px;
+  border-radius: 5px;
+  padding: 5px;
+  padding-left: 10px;
+  padding-right: 15px;
+  max-width: 50%;
+}
+
+.zk-tool-buttons {
+  position: absolute;
+  border-radius: 5px;
+  right: 0px;
+  display: flex;
+  justify-content: center;
+  max-width: 50%;
+  flex-wrap: wrap;
+}
+
+.zk-tool-buttons > .clickable-icon {
+  background-color: rgba(var(--color-blue-rgb), 0.3);
+  margin-left: 2px;
+  padding: 2px;
+  border: 1px solid;
+}
+
+.zk-extra-buttons{
+  background-color: rgba(var(--color-blue-rgb), 0.1);
+}
+
+.zk-index-link > span {
+  padding-left: 5px;
+}
+
+.zk-index-link > span :hover {
+  background-color: rgba(var(--color-blue-rgb), 0.5);
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.zk-branch-tab-select{
+  background-color: rgba(var(--color-blue-rgb), 0.5);
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.zk-graph-mermaid {
+  background-color: rgba(var(--color-blue-rgb), 0.1);
+  margin: 5px;
+  border-radius: 5px;
+}
+
+.zk-graph-text {
+  position: fixed;
+  background-color: rgba(var(--color-blue-rgb), 0.2);
+  margin:5px;
+  margin-top: 0px;
+  border-radius: 5px;
+  padding: 5px;
+  float: left;
+}
+
+.zk-graph-icon {
+  position: fixed;
+  margin-right: 5px;
+  float: right;
+  right: 0px;
+  justify-content: center;
+}
+
+.zk-graph-icon >.clickable-icon {
+  background-color: rgba(var(--color-blue-rgb), 0.3);
+  border: 1px solid;
+  padding: 2px;
+}
+
+
+.top-buttons-div{
+  display: flex;
+  justify-content: left;
+  align-items: center;
+  box-shadow: 0px 10px 10px -10px rgba(0, 0, 0, 0.5);
+  margin-bottom: 30px;
+  padding-left: 20px;
+}
+
+.top-buttons-div button{
+  margin: -2px;
+}
+
+.top-buttons-div button:hover{
+  background-color: var(--interactive-accent) !important;
+}
+
+.zk-local-section{
+  padding: 10px;
+  border-radius: 10px;
+  box-shadow: -1px -1px 1px 1px rgba(0, 0, 0, 1);
+}
+
+.zk-table-view table {
+  border-width: 1px;
+  font-size:12px;
+  border-collapse: collapse;
+  max-height: 530px;
+  width: 100%;
+  table-layout: auto;
+}
+
+.zk-table-view table thead tr {
+  background-color: rgba(var(--color-blue-rgb), 1);
+  color: var(--text-on-accent);
+}
+
+.zk-table-view table th, .zk-table-view table td {
+  border-width: 1px;
+  padding: 8px;
+  border-style: solid;
+}
+
+.zk-table-view table ul {
+  margin: 0;
+  padding-left: 10px;
+}
+
+.zk-table-container{
+  width: 100%;
+  height: 100%;
+}
+
+.zk-modal-container{
+  z-index: 20;
+}
+.zk-expand-modal{
+  width: 100%;
+  height: 100%;
+
+}
+.zk-expand-graph{
+  background-color: rgba(var(--color-blue-rgb), 0.1);
+}
+
+.recent-item{
+  position: relative;
+}
+
+.recent-close-button{
+  position: absolute;
+  right: 0;
+  top:0;
+}
+
+.nav-buttons-container > input{
+  width: 100%;
+}
+
+.zk-center-button{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.command-text{
+  width: 70%;
+}
+
+.zk-name-input-wrapper{
+  display:flex;
+  gap:8px;
+  align-items:center
+}
+
+.zk-name-input-wrapper button{
+  margin:8px
+}
+
+.zk-play-controller {
+  position: fixed;
+  bottom: 15px;
+  left: 45%;
+  display: flex;
+}
+
+.zk-play-controller > .clickable-icon {
+  background-color: rgba(var(--color-blue-rgb), 0.2);
+  margin: 1px;
+  padding: 2px;
+  border: 1px solid;
+}
+
+.zk-hidden{
+  display: none;
+}
+
+.zk-full-width{
+  width: 100%;
+}
+
+.zk-fold-green{
+  fill: #3CB43C !important;
+  stroke:#333 !important;
+  stroke-width:1px !important;
+}
+
+.zk-fold-yellow{
+  fill: yellow !important;
+  stroke:#333 !important;
+  stroke-width:1px !important;
+}
+
+.zk-full-search {
+  width: calc(100% - 20px);
+}
+
+/* 滑块容器 - 固定在左下角 */
+.zk-slider-container {
+  position: absolute !important;
+  top: auto !important;
+  bottom: 20px !important;
+  left: 5px !important;
+  background-color: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  padding: 10px 12px;
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  z-index: 2000;
+  width: 130px;
+  display: block !important;
+}
+
+/* 单个滑块控制 */
+.zk-slider-control {
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.zk-slider-control:last-child {
+  margin-bottom: 0;
+}
+
+/* 滑块标签 */
+.zk-slider-label {
+  font-size: 12px;
+  color: var(--text-normal);
+  font-weight: 500;
+}
+
+/* 滑块数值显示 */
+.zk-slider-value {
+  display: none;
+}
+
+/* 滑块样式 */
+.zk-slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 4px;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+  outline: none;
+  margin-top: 4px;
+}
+
+.zk-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+
+.zk-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.zk-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--interactive-accent);
+  cursor: pointer;
+  border: none;
+}
+
+/* 图形容器 */
+.zk-d3-graph {
+  width: 100%;
+  height: 100%;
+}
+
+/* D3 节点样式 */
+.node circle {
+  transition: all 0.3s ease;
+}
+
+.node text {
+  transition: all 0.3s ease;
+}
