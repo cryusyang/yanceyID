@@ -707,11 +707,32 @@ export class ZKIndexView extends ItemView {
             let zkGraph = indexMermaidDiv.createEl("div", { cls: "zk-index-mermaid" });
             zkGraph.id = `zk-index-mermaid-${i}`;       
 
-            renderD3MindMap(zkGraph, branchEntranceNodeArr[i], branchNodes, this.plugin, {
+            // Determine visual root: find the node with the shortest ID path (highest level)
+            // This ensures that for 'parent' or 'root' modes, we render from the top-most node
+            let visualRoot = branchEntranceNodeArr[i];
+            if (branchNodes.length > 0) {
+                // Sort by IDArr length to find the shallowest node
+                // We create a copy to avoid mutating branchNodes order if it matters elsewhere
+                const sortedNodes = [...branchNodes].sort((a, b) => a.IDArr.length - b.IDArr.length);
+                
+                // In 'parent' mode, the parent (if found) will be shorter than entranceNode
+                // In 'root' mode, the root will be shorter
+                // In 'index' mode, entranceNode is the shortest (or equal)
+                if (sortedNodes[0].IDArr.length < visualRoot.IDArr.length) {
+                    visualRoot = sortedNodes[0];
+                }
+                // If same length, keep entranceNode as visualRoot unless entranceNode is not in branchNodes
+                else if (!branchNodes.find(n => n.IDStr === visualRoot.IDStr)) {
+                     visualRoot = sortedNodes[0];
+                }
+            }
+
+            renderD3MindMap(zkGraph, visualRoot, branchNodes, this.plugin, {
                 width: indexMermaidDiv.clientWidth || 1000, 
                 height: this.containerEl.offsetHeight - 100,
                 nodeColor: this.plugin.settings.nodeColor,
-                direction: this.plugin.settings.DirectionOfBranchGraph
+                direction: this.plugin.settings.DirectionOfBranchGraph,
+                highlightID: branchEntranceNodeArr[i].IDStr // Pass the entrance node ID for highlighting
             });
         }
     }
@@ -973,50 +994,67 @@ export class ZKIndexView extends ItemView {
         // Starting node
         switch (this.plugin.settings.StartingPoint) {
             case "root":
-                let frontNodes = this.plugin.MainNotes.filter(n => entranceNode.IDStr.startsWith(n.IDStr));
-
-                if (frontNodes.length > 0) {
-                    startNode = frontNodes[0];
-
+                // Get the root segment (first segment)
+                if (entranceNode.IDArr.length > 0) {
+                    const rootSegment = entranceNode.IDArr[0];
+                    // Filter all nodes that belong to this root (same first segment)
+                    branchNodes = this.plugin.MainNotes.filter(n => n.IDArr.length > 0 && n.IDArr[0] === rootSegment);
+                    
+                    if (branchNodes.length === 0) {
+                        new Notice("Can't find any nodes for this root!");
+                        branchNodes = [entranceNode];
+                    } else {
+                        // Determine startNode (the actual root node) for reference if needed
+                        // Ideally, it's the node with IDArr.length === 1
+                        const rootNode = branchNodes.find(n => n.IDArr.length === 1);
+                        if (rootNode) {
+                            startNode = rootNode;
+                        } else {
+                            // If explicit root node doesn't exist, use the shallowest ancestor
+                            const sorted = [...branchNodes].sort((a,b) => a.IDArr.length - b.IDArr.length);
+                            if (sorted.length > 0) startNode = sorted[0];
+                        }
+                    }
                 } else {
-                    new Notice("Can't find the root of the branch!");
+                     branchNodes = [entranceNode];
                 }
-
-                branchNodes = this.plugin.MainNotes.filter(n => n.IDStr.startsWith(startNode.IDStr));
-
                 break;
 
             case "parent":
-                if (entranceNode.IDArr.length > 1) {
-                    let fatherArr = entranceNode.IDArr.slice(0, entranceNode.IDArr.length - 1);
-
-                    let fatherNode = this.plugin.MainNotes
-                        .find(n => n.IDStr == fatherArr.toString());
-
-                    if (typeof fatherNode !== 'undefined') {
-                        startNode = fatherNode;
-
-                    } else {
-                        startNode = entranceNode;
-                    }
-
+                // 1. Check if root node (no parent) -> downgrade to Index mode
+                if (entranceNode.IDArr.length === 1) {
+                    branchNodes = this.plugin.MainNotes.filter(n => n.IDStr === entranceNode.IDStr || n.IDStr.startsWith(entranceNode.IDStr + ","));
                 } else {
-                    startNode = entranceNode;
+                    // 2. Non-root node processing
+                    // Use IDArr to get parent IDStr correctly (handling normalization)
+                    const parentIDStr = entranceNode.IDArr.slice(0, -1).toString();
+                    
+                    branchNodes = this.plugin.MainNotes.filter(node => {
+                        // Condition A: Is Parent
+                        if (node.IDStr === parentIDStr) return true;
+                        
+                        // Condition B: Is Direct Child of Parent (Siblings & Self)
+                        // Must be under same parent AND have same depth
+                        if (node.IDStr.startsWith(parentIDStr + ",") && node.IDArr.length === entranceNode.IDArr.length) return true;
+                        
+                        // Condition C: Is My Descendants
+                        if (node.IDStr.startsWith(entranceNode.IDStr + ",")) return true;
+                        
+                        return false;
+                    });
                 }
-
-                // only keep the father, siblings and sons of entranceNode
-                branchNodes = this.plugin.MainNotes
-                    .filter(n => n.IDStr.startsWith(startNode.IDStr))
-                    .filter(n => n.IDStr.startsWith(entranceNode.IDStr) || (n.IDArr.length <= entranceNode.IDArr.length));
-
                 break;
+            case "index":
             default:
-                branchNodes = this.plugin.MainNotes.filter(n => n.IDStr.startsWith(entranceNode.IDStr));
+                branchNodes = this.plugin.MainNotes.filter(n => n.IDStr === entranceNode.IDStr || n.IDStr.startsWith(entranceNode.IDStr + ","));
+
 
         }
 
         // branch level
-        if (this.plugin.settings.DisplayLevel == "next") {
+        // Only apply 'next' level filtering for 'index' mode. 
+        // 'root' and 'parent' modes imply showing full context/descendants as defined.
+        if (this.plugin.settings.DisplayLevel == "next" && this.plugin.settings.StartingPoint === "index") {
 
             branchNodes = branchNodes.filter(n => !n.IDStr.startsWith(entranceNode.IDStr) ||
                 n.IDArr.length <= entranceNode.IDArr.length + 1);

@@ -77,6 +77,7 @@ export interface RenderOptions {
     nodeRadius?: number;
     siblingSeparation?: number;
     levelSeparation?: number;
+    highlightID?: string; // New field for highlighted node ID
 }
 
 // Global variable to persist zoom state across re-renders
@@ -290,8 +291,12 @@ export function renderD3MindMap(
 
         node.append("circle")
             .attr("r", params.nodeRadius)
-            .style("fill", d => d.data.IDStr.startsWith(rootNode.IDStr) ? "var(--interactive-accent)" : "var(--background-secondary)")
-            .style("stroke", d => d.data._children ? "#e64980" : "var(--background-primary)")
+            .style("fill", d => {
+                if (d.data._children) return "#7950F2"; // Folded color (Priority 1)
+                if (options.highlightID && d.data.IDStr === options.highlightID) return "#fa5252"; // Highlight color (Priority 2)
+                return d.data.IDStr.startsWith(rootNode.IDStr) ? "var(--interactive-accent)" : "var(--background-secondary)"; // Default color (Priority 3)
+            })
+            .style("stroke", d => d.data._children ? "#262626" : "var(--background-primary)")
             .style("stroke-width", d => d.data._children ? "3px" : "2px")
             .style("cursor", "pointer")
             .on("click", async (event: MouseEvent, d: d3.HierarchyPointNode<TreeData>) => {
