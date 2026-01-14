@@ -1,6 +1,6 @@
 export default {
     // settings.ts
-    "Zettelkasten Navigation": "Zettelkasten Navigation",
+    "Zettelkasten Navigation": "YanceyID",
     "ZK main notes": "Main notes",
     "Main notes folder location": "Main notes folder location",
     "Main notes folder des": "Files in the specified folder(s) will be available as main notes",

@@ -1,0 +1,10 @@
+{
+	"id": "yancey-id",
+	"name": "YanceyID",
+	"version": "0.0.21",
+	"minAppVersion": "1.5.7",
+	"description": "Luhmann-style notes ID and indexes",
+	"author": "cryusyang",
+	"authorUrl": "https://github.com/cryusyang",
+	"isDesktopOnly": false
+}

@@ -1,5 +1,5 @@
 {
-	"name": "zettelkasten-navigation",
+	"name": "yancey-id",
 	"version": "0.0.21",
 	"description": "Luhmann-style notes ID and indexes",
 	"main": "main.js",
@@ -9,7 +9,15 @@
 		"version": "node version-bump.mjs && git add manifest.json versions.json"
 	},
 	"keywords": [],
-	"author": "",
+	"author": "cryusyang",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/cryusyang/yanceyID.git"
+	},
+	"bugs": {
+		"url": "https://github.com/cryusyang/yanceyID/issues"
+	},
+	"homepage": "https://github.com/cryusyang/yanceyID#readme",
 	"license": "MIT",
 	"devDependencies": {
 		"@types/d3": "^7.4.3",
