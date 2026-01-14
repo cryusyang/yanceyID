@@ -334,42 +334,40 @@ export default class ZKNavigationPlugin extends Plugin {
 
         this.registerView(ZK_TABLE_TYPE, (leaf) => new ZKTableView(leaf, this, this.tableArr));
               
-        this.addRibbonIcon("ghost", t("open zk-index-graph"), async () => {
+        this.addRibbonIcon("ghost", t("open_main_view"), async () => {
             
             this.openIndexView();
             
         })
 
-        this.addRibbonIcon("network", t("open zk-local-graph"), async () => {
+        this.addRibbonIcon("network", t("open_index_view"), async () => {
             
             this.openGraphView();
         });
 
         this.addCommand({
             id: "zk-index-graph",
-            name: t("open zk-index-graph"),
-            callback:async ()=>{
-                
+            name: t("open_main_view"),
+            callback: async () => {
                 this.openIndexView();
             }
         });
 
         this.addCommand({
             id: "zk-local-graph",
-            name: t("open zk-local-graph"),
-            callback: async ()=>{
-                
+            name: t("open_index_view"),
+            callback: async () => {
                 this.openGraphView();
             }
         });
 
         this.addCommand({
             id: "zk-index-graph-by-file",
-            name: t("reveal current file in zk-index-graph"),
-            callback: async ()=>{
+            name: t("reveal_file_in_main_view"),
+            callback: async () => {
                 await this.revealFileInIndexView();
             }
-        })
+        });
 
 
         this.addCommand({

@@ -43,14 +43,14 @@ export class ZKNavigationSettngTab extends PluginSettingTab {
         })
 
         const indexGraphButton = new ButtonComponent(topButtonsDiv);
-        indexGraphButton.setButtonText(t("zk-index-graph-view"))
+        indexGraphButton.setButtonText(t("zk-main-view"))
         .setClass("vertical-tab-nav-item")
         .onClick(()=>{
             this.openTabSection(2,topButtonsDiv);
         })
 
         const localGraphButton = new ButtonComponent(topButtonsDiv);
-        localGraphButton.setButtonText(t("zk-local-graph-view"))
+        localGraphButton.setButtonText(t("zk-index-view"))
         .setClass("vertical-tab-nav-item")
         .onClick(()=>{
             this.openTabSection(3,topButtonsDiv); 
@@ -567,7 +567,7 @@ export class ZKNavigationSettngTab extends PluginSettingTab {
         })
 
         const localGraphView = settingTabDiv.createDiv("zk-setting-section");
-        //new Setting(settingTabDiv).setName(t("zk-local-graph-view")).setHeading(); 
+        
         new Setting(localGraphView)
             .setName(t("Open close-relative graph"))
             .setDesc(t("Mermaid graph to display parent, siblings and sons"))

@@ -3,6 +3,12 @@ import { App, FuzzySuggestModal, Notice, SuggestModal, renderMatches } from "obs
 import { t } from "src/lang/helper";
 import { ZKNode } from "src/view/indexView";
 
+// Helper to ensure consistency between search text and render offset
+const SEPARATOR = ": ";
+function getFullSearchText(node: ZKNode): string {
+    return `${node.ID}${SEPARATOR}${node.title}`;
+}
+
 export class mainNoteModal extends SuggestModal<ZKNode>{
     selectZKNode: ZKNode
     onSubmit: (selectZKNode: ZKNode) => void;
@@ -22,6 +28,7 @@ export class mainNoteModal extends SuggestModal<ZKNode>{
     getSuggestions(query: string):ZKNode[] {
       let mainNotes:ZKNode[] = [];
       this.query = query;
+      // Search in both ID and Title
       mainNotes = this.MainNotes.filter(node => node.ID.toLowerCase().startsWith(query.toLowerCase()) 
       || node.title.toLowerCase().startsWith(query.toLowerCase()));
       
@@ -29,25 +36,26 @@ export class mainNoteModal extends SuggestModal<ZKNode>{
     }
 
     renderSuggestion(node: ZKNode, el:HTMLElement) {
-      let displayText = `${node.ID}: ${node.title}`;
-      renderMatches(el, displayText, [[0, this.query.length]], this.getPosition(node));
+      // ONLY show the title, do NOT show the ID
+      const displayText = node.title;
+      
+      const matches: [number, number][] = [];
+      const queryLower = this.query.toLowerCase();
+      const titleLower = node.title.toLowerCase();
+      
+      // Only highlight if the query matches the title prefix
+      if (titleLower.startsWith(queryLower)) {
+          matches.push([0, queryLower.length]);
+      }
+      // If query matches ID but not title, we show title without highlight
+      
+      renderMatches(el, displayText, matches);
     }
 
     onChooseSuggestion(node: ZKNode, evt: MouseEvent | KeyboardEvent) {
       this.selectZKNode = node;
       this.onSubmit(this.selectZKNode);
     }
-
-    getPosition(node:ZKNode){
-      let position:number = 0;
-      if(node.ID.toLocaleLowerCase().startsWith(this.query.toLocaleLowerCase())){
-        position = 0
-      }else{
-        position = node.ID.length + 2;
-      }
-      return position;
-    }
-
 }
 
 export class mainNoteFuzzyModal extends FuzzySuggestModal<ZKNode> {
@@ -67,13 +75,45 @@ export class mainNoteFuzzyModal extends FuzzySuggestModal<ZKNode> {
     }
   
     getItems(): ZKNode[] {
-
       return this.MainNotes;
-      
     }
   
     getItemText(node: ZKNode): string {
-      return `${node.ID}: ${node.title}`;
+      // Include ID in the search text so users can search by ID
+      return getFullSearchText(node);
+    }
+
+    renderSuggestion(item: any, el: HTMLElement) {
+        // item is FuzzyMatch<ZKNode>
+        const node = item.item as ZKNode;
+        const match = item.match;
+        
+        // ONLY show the title
+        const displayText = node.title;
+        
+        // Calculate offset to map matches from "ID: Title" back to "Title"
+        // ID part is `node.ID` + `: `
+        const prefixLength = node.ID.length + SEPARATOR.length;
+        
+        const titleMatches: [number, number][] = [];
+        
+        if (match && match.matches) {
+            for (const range of match.matches) {
+                const start = range[0];
+                const end = range[1];
+                
+                // We only care about matches that occur within the title part
+                const validStart = Math.max(start, prefixLength);
+                const validEnd = Math.max(end, prefixLength);
+                
+                if (validEnd > validStart) {
+                    // Shift indices to be relative to the title start
+                    titleMatches.push([validStart - prefixLength, validEnd - prefixLength]);
+                }
+            }
+        }
+
+        renderMatches(el, displayText, titleMatches);
     }
   
     onChooseItem(selectZKNode: ZKNode, evt: MouseEvent | KeyboardEvent) {

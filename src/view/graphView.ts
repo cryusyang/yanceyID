@@ -6,7 +6,7 @@ import { displayWidth, mainNoteInit } from "src/utils/utils";
 import { expandGraphModal } from "src/modal/expandGraphModal";
 
 export const ZK_GRAPH_TYPE: string = "zk-graph-type"
-export const ZK_GRAPH_VIEW: string = t("zk-local-graph")
+export const ZK_GRAPH_VIEW: string = t("index_view");
 
 export class ZKGraphView extends ItemView {
 

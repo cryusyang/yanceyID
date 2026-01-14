@@ -8,7 +8,7 @@ import { addSvgPanZoom, displayWidth, mainNoteInit, random } from "src/utils/uti
 import { renderD3MindMap } from "src/utils/d3Render";
 
 export const ZK_INDEX_TYPE: string = "zk-index-type";
-export const ZK_INDEX_VIEW: string = t("zk-index-graph");
+export const ZK_INDEX_VIEW: string = t("main_view");
 export const ZK_NAVIGATION: string = "zk-navigation";
 
 export interface ZKNode {

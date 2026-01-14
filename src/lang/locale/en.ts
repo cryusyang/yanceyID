@@ -12,7 +12,7 @@ export default {
     "Retrieval": "Retrieval",
     "Indexes folder location": "⚠Keyword files folder location",
     "index_description": "A vaild keyword index is a .md file includes a few main note links",
-    "zk-index-graph-view": "zk-index-graph-view",
+    "zk-main-view": "Main View",
     "Name of index button": "Button name",
     "Suggest mode of index modal": "Suggest mode of keyword modal",
     "Suggest mode of main note modal": "Suggest mode of main note modal",
@@ -23,7 +23,7 @@ export default {
     "In order to distinguish nodes which ID ends with letter and number": "In order to distinguish nodes which ID ends with letter or number",
     "Fold node toggle": "Fold node toggle",
     "Open the fold icon(🟡🟢)": "Open the fold icon(🟡🟢)",
-    "zk-local-graph-view": "zk-local-graph-view",
+    "zk-index-view": "Index View",
     "Open close-relative graph": "Open close-relative graph",
     "Mermaid graph to display parent, siblings and sons": "Mermaid graph to display parent, siblings and children",
     "Open inlinks graph": "Open inlinks graph",
@@ -145,14 +145,14 @@ export default {
     "expand graph": "expand graph",
 
     //main.ts
-    "open zk-index-graph": "open zk-index-graph",
-    "open zk-local-graph": "open zk-local-graph",
-    "zk-local-graph": "zk-local-graph",
-    "zk-index-graph": "zk-index-graph",    
+    "open_main_view": "Open Main View",
+    "open_index_view": "Open Index View",
+    "index_view": "Index View",
+    "main_view": "Main View",    
     "Main notes": "📄Main notes",
     '📖index': '📖keywords',
     "Copy zk-navigation URI":"Copy zk-navigation URI",
-    "reveal current file in zk-index-graph": "reveal current file in zk-index-graph",
+    "reveal_file_in_main_view": "Reveal current file in Main View",
 
     //indexModal.ts
     "Index folder not set!": "❌Setting error: Index folder not set!",

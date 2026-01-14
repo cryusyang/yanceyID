@@ -171,6 +171,37 @@ export class indexFuzzyModal extends FuzzySuggestModal<ZKIndex> {
     return index.display;
   }
 
+  renderSuggestion(item: any, el: HTMLElement) {
+    const index = item.item as ZKIndex;
+    const match = item.match;
+    
+    const displayText = index.keyword;
+    // index.display format: `【${file.basename}】: ...`
+    // We want to extract matches corresponding to file.basename which starts at index 1
+    const offset = 1;
+    const limit = offset + displayText.length;
+
+    const titleMatches: [number, number][] = [];
+    
+    if (match && match.matches) {
+        for (const range of match.matches) {
+            // Check if the match falls within the keyword part (between 【 and 】)
+            // range is [start, end)
+            // We need intersection of [range[0], range[1]] and [offset, limit]
+            
+            const start = Math.max(range[0], offset);
+            const end = Math.min(range[1], limit);
+            
+            if (end > start) {
+                // Shift back to 0-based index for keyword
+                titleMatches.push([start - offset, end - offset]);
+            }
+        }
+    }
+
+    renderMatches(el, displayText, titleMatches);
+  }
+
   onChooseItem(index: ZKIndex, evt: MouseEvent | KeyboardEvent) {
     
     this.index = index;
