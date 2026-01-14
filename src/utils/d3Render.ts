@@ -66,6 +66,16 @@ export function convertZKNodesToTree(root: ZKNode, allNodes: ZKNode[]): TreeData
         }
     }
 
+    // Ensure strict sorting of children by IDStr (YanceyID order)
+    // This prevents sibling reordering when nodes are folded/unfolded
+    const sortChildren = (node: TreeData) => {
+        if (node.children && node.children.length > 0) {
+            node.children.sort((a, b) => a.IDStr.localeCompare(b.IDStr));
+            node.children.forEach(sortChildren);
+        }
+    };
+    sortChildren(treeRoot);
+
     return treeRoot;
 }
 
