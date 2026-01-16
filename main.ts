@@ -121,6 +121,9 @@ interface ZKNavigationSettings {
     d3SiblingSeparation: number;
     d3LevelSeparation: number;
     d3FontSize: number;
+    d3NodeColor: string;
+    d3FoldingNodeColor: string;
+    d3HighlightNodeColor: string;
 }
 
 //Default value for setting field
@@ -194,7 +197,10 @@ const DEFAULT_SETTINGS: ZKNavigationSettings = {
     d3NodeRadius: 5,
     d3SiblingSeparation: 30,
     d3LevelSeparation: 150,
-    d3FontSize: 12
+    d3FontSize: 12,
+    d3NodeColor: "#268bd2",
+    d3FoldingNodeColor: "#7950F2",
+    d3HighlightNodeColor: "#fa5252"
 }
 
 export default class ZKNavigationPlugin extends Plugin {

@@ -108,6 +108,9 @@ export function renderD3MindMap(
         siblingSep: plugin.settings.d3SiblingSeparation || options.siblingSeparation || 30,
         levelSep: plugin.settings.d3LevelSeparation || options.levelSeparation || 150,
         fontSize: plugin.settings.d3FontSize || 12,
+        nodeColor: plugin.settings.d3NodeColor || options.nodeColor || "#268bd2",
+        foldingNodeColor: plugin.settings.d3FoldingNodeColor || "#7950F2",
+        highlightNodeColor: plugin.settings.d3HighlightNodeColor || "#fa5252",
         textThreshold: 0.6 // Default text visibility threshold
     };
 
@@ -168,6 +171,7 @@ export function renderD3MindMap(
 
     // --- Slider Helper (No Numbers) ---
     function createSlider(
+        container: HTMLElement,
         labelText: string,
         min: number,
         max: number,
@@ -175,7 +179,7 @@ export function renderD3MindMap(
         initialValue: number,
         onChange: (val: number) => void
     ) {
-        const wrapper = settingsContent.createDiv({ cls: "zk-slider-control" });
+        const wrapper = container.createDiv({ cls: "zk-slider-control" });
         
         // Label only
         wrapper.createDiv({ text: labelText, cls: "zk-slider-label" });
@@ -195,7 +199,7 @@ export function renderD3MindMap(
     }
 
     // 1. Vertical Spacing
-    createSlider("Vertical Spacing", 10, 100, 1, params.siblingSep, async (val) => {
+    createSlider(settingsContent, "Vertical Spacing", 10, 100, 1, params.siblingSep, async (val) => {
         params.siblingSep = val;
         plugin.settings.d3SiblingSeparation = val;
         await plugin.saveData(plugin.settings);
@@ -203,7 +207,7 @@ export function renderD3MindMap(
     });
 
     // 2. Horizontal Spacing
-    createSlider("Horizontal Spacing", 50, 400, 10, params.levelSep, async (val) => {
+    createSlider(settingsContent, "Horizontal Spacing", 50, 400, 10, params.levelSep, async (val) => {
         params.levelSep = val;
         plugin.settings.d3LevelSeparation = val;
         await plugin.saveData(plugin.settings);
@@ -211,7 +215,7 @@ export function renderD3MindMap(
     });
 
     // 3. Node Size
-    createSlider("Node Size", 3, 15, 1, params.nodeRadius, async (val) => {
+    createSlider(settingsContent, "Node Size", 3, 15, 1, params.nodeRadius, async (val) => {
         params.nodeRadius = val;
         plugin.settings.d3NodeRadius = val;
         await plugin.saveData(plugin.settings);
@@ -219,7 +223,7 @@ export function renderD3MindMap(
     });
 
     // 4. Font Size
-    createSlider("Font Size", 8, 20, 1, params.fontSize, async (val) => {
+    createSlider(settingsContent, "Font Size", 8, 20, 1, params.fontSize, async (val) => {
         params.fontSize = val;
         plugin.settings.d3FontSize = val;
         await plugin.saveData(plugin.settings);
@@ -227,9 +231,93 @@ export function renderD3MindMap(
     });
 
     // 5. Text Threshold
-    createSlider("Text Threshold", 0.1, 2.0, 0.1, params.textThreshold, (val) => {
+    createSlider(settingsContent, "Text Threshold", 0.1, 2.0, 0.1, params.textThreshold, (val) => {
         params.textThreshold = val;
     });
+
+    // --- Collapsible Group: Node Color Display ---
+    const groupNodeColor = sliderContainer.createDiv({ cls: "zk-settings-group" });
+    const groupHeaderNodeColor = groupNodeColor.createDiv({ cls: "zk-group-header" });
+    
+    // Group Arrow
+    const arrowIconNodeColor = groupHeaderNodeColor.createDiv({ cls: "zk-group-arrow" });
+    setIcon(arrowIconNodeColor, "chevron-right"); // Default closed
+    
+    // Group Title
+    groupHeaderNodeColor.createSpan({ text: "Node Color Display", cls: "zk-group-title" });
+
+    // Content Area
+    const settingsContentNodeColor = groupNodeColor.createDiv({ cls: "zk-group-content" });
+    settingsContentNodeColor.style.display = "none"; // Default hidden
+
+    // Toggle Logic
+    let isOpenNodeColor = false; 
+    groupHeaderNodeColor.onclick = () => {
+        isOpenNodeColor = !isOpenNodeColor;
+        if (isOpenNodeColor) {
+            settingsContentNodeColor.style.display = "block";
+            setIcon(arrowIconNodeColor, "chevron-down");
+        } else {
+            settingsContentNodeColor.style.display = "none";
+            setIcon(arrowIconNodeColor, "chevron-right");
+        }
+    };
+
+    // Normal Node Color
+    const colorRow = settingsContentNodeColor.createDiv({ cls: "zk-color-row" });
+    colorRow.createDiv({ text: "Normal Node Color", cls: "zk-color-label" });
+    
+    const colorInput = colorRow.createEl("input", { 
+        type: "color", 
+        cls: "zk-color-input" 
+    });
+    colorInput.value = plugin.settings.d3NodeColor;
+    
+    colorInput.oninput = async (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        params.nodeColor = val;
+        plugin.settings.d3NodeColor = val;
+        await plugin.saveData(plugin.settings);
+        // Update color directly for better performance, or full re-render
+        // For simplicity and consistency (folded state etc), we call updateGraph
+        updateGraph();
+    };
+
+    // Folding Node Color
+    const colorRowFolding = settingsContentNodeColor.createDiv({ cls: "zk-color-row" });
+    colorRowFolding.createDiv({ text: "Folding Node Color", cls: "zk-color-label" });
+    
+    const colorInputFolding = colorRowFolding.createEl("input", { 
+        type: "color", 
+        cls: "zk-color-input" 
+    });
+    colorInputFolding.value = plugin.settings.d3FoldingNodeColor;
+    
+    colorInputFolding.oninput = async (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        params.foldingNodeColor = val;
+        plugin.settings.d3FoldingNodeColor = val;
+        await plugin.saveData(plugin.settings);
+        updateGraph();
+    };
+
+    // Highlight Node Color
+    const colorRowHighlight = settingsContentNodeColor.createDiv({ cls: "zk-color-row" });
+    colorRowHighlight.createDiv({ text: "Highlight Node Color", cls: "zk-color-label" });
+    
+    const colorInputHighlight = colorRowHighlight.createEl("input", { 
+        type: "color", 
+        cls: "zk-color-input" 
+    });
+    colorInputHighlight.value = plugin.settings.d3HighlightNodeColor;
+    
+    colorInputHighlight.oninput = async (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        params.highlightNodeColor = val;
+        plugin.settings.d3HighlightNodeColor = val;
+        await plugin.saveData(plugin.settings);
+        updateGraph();
+    };
 
     // 图形容器
     const graphDiv = container.createDiv({ cls: "zk-d3-graph" });
@@ -326,9 +414,9 @@ export function renderD3MindMap(
         node.append("circle")
             .attr("r", params.nodeRadius)
             .style("fill", d => {
-                if (d.data._children) return "#7950F2"; // Folded color (Priority 1)
-                if (options.highlightID && d.data.IDStr === options.highlightID) return "#fa5252"; // Highlight color (Priority 2)
-                return d.data.IDStr.startsWith(rootNode.IDStr) ? "var(--interactive-accent)" : "var(--background-secondary)"; // Default color (Priority 3)
+                if (d.data._children) return params.foldingNodeColor; // Folded color (Priority 1)
+                if (options.highlightID && d.data.IDStr === options.highlightID) return params.highlightNodeColor; // Highlight color (Priority 2)
+                return d.data.IDStr.startsWith(rootNode.IDStr) ? params.nodeColor : "var(--background-secondary)"; // Default color (Priority 3)
             })
             .style("stroke", d => d.data._children ? "#262626" : "var(--background-primary)")
             .style("stroke-width", d => d.data._children ? "3px" : "2px")
