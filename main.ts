@@ -127,6 +127,11 @@ interface ZKNavigationSettings {
     d3LineWidth: number;
     d3HighlightLineColor: string;
     d3TextThreshold: number;
+    d3ZoomSensitivity: number;
+    d3ZoomSmoothness: number;
+    d3PanResponsiveness: number;
+    d3PanInertia: number;
+    d3LastTransform: { x: number; y: number; k: number } | null;
 }
 
 //Default value for setting field
@@ -206,7 +211,12 @@ const DEFAULT_SETTINGS: ZKNavigationSettings = {
     d3HighlightNodeColor: "#fa5252",
     d3LineWidth: 1.5,
     d3HighlightLineColor: "var(--interactive-accent)",
-    d3TextThreshold: 0.6
+    d3TextThreshold: 0.6,
+    d3ZoomSensitivity: 0.5,
+    d3ZoomSmoothness: 0.1,
+    d3PanResponsiveness: 0.2,
+    d3PanInertia: 0.95,
+    d3LastTransform: null
 };
 
 export default class ZKNavigationPlugin extends Plugin {

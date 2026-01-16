@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { ZKNode } from "../view/indexView";
 import ZKNavigationPlugin from "../../main";
-import { Menu, moment, Notice, setIcon } from "obsidian";
+import { Menu, moment, Notice, setIcon, debounce } from "obsidian";
 import { TooltipManager } from "./tooltipManager";
 import { YanceyID } from "./yanceyId";
 
@@ -113,7 +113,11 @@ export function renderD3MindMap(
         highlightNodeColor: plugin.settings.d3HighlightNodeColor || "#fa5252",
         lineWidth: plugin.settings.d3LineWidth || 1.5,
         highlightLineColor: plugin.settings.d3HighlightLineColor || "var(--interactive-accent)",
-        textThreshold: plugin.settings.d3TextThreshold || 0.6
+        textThreshold: plugin.settings.d3TextThreshold || 0.6,
+        zoomSensitivity: plugin.settings.d3ZoomSensitivity || 0.5,
+        zoomSmoothness: plugin.settings.d3ZoomSmoothness || 0.1,
+        panResponsiveness: plugin.settings.d3PanResponsiveness || 0.2,
+        panInertia: plugin.settings.d3PanInertia || 0.95
     };
 
     // Settings Trigger Button (Top Right)
@@ -384,6 +388,66 @@ export function renderD3MindMap(
         // updateGraph(); 
     };
 
+    // --- Collapsible Group: Dynamics Settings ---
+    const groupDynamics = sliderContainer.createDiv({ cls: "zk-settings-group" });
+    const groupHeaderDynamics = groupDynamics.createDiv({ cls: "zk-group-header" });
+    
+    // Group Arrow
+    const arrowIconDynamics = groupHeaderDynamics.createDiv({ cls: "zk-group-arrow" });
+    setIcon(arrowIconDynamics, "chevron-right"); // Default closed
+    
+    // Group Title
+    groupHeaderDynamics.createSpan({ text: "Dynamics Settings", cls: "zk-group-title" });
+
+    // Content Area
+    const settingsContentDynamics = groupDynamics.createDiv({ cls: "zk-group-content" });
+    settingsContentDynamics.style.display = "none"; // Default hidden
+
+    // Toggle Logic
+    let isOpenDynamics = false; 
+    groupHeaderDynamics.onclick = () => {
+        isOpenDynamics = !isOpenDynamics;
+        if (isOpenDynamics) {
+            settingsContentDynamics.style.display = "block";
+            setIcon(arrowIconDynamics, "chevron-down");
+        } else {
+            settingsContentDynamics.style.display = "none";
+            setIcon(arrowIconDynamics, "chevron-right");
+        }
+    };
+
+    // Zoom Sensitivity Sub-option
+    createSlider(settingsContentDynamics, "Zoom Sensitivity", 0.1, 3.0, 0.1, params.zoomSensitivity, async (val) => {
+        params.zoomSensitivity = val;
+        plugin.settings.d3ZoomSensitivity = val;
+        await plugin.saveData(plugin.settings);
+        // affects interaction immediately via params reference
+    });
+
+    // Zoom Smoothness Sub-option
+    createSlider(settingsContentDynamics, "Zoom Smoothness", 0.01, 0.5, 0.01, params.zoomSmoothness, async (val) => {
+        params.zoomSmoothness = val;
+        plugin.settings.d3ZoomSmoothness = val;
+        await plugin.saveData(plugin.settings);
+        // affects interaction immediately via params reference
+    });
+
+    // Pan Responsiveness Sub-option
+    createSlider(settingsContentDynamics, "Pan Responsiveness", 0.05, 1.0, 0.05, params.panResponsiveness, async (val) => {
+        params.panResponsiveness = val;
+        plugin.settings.d3PanResponsiveness = val;
+        await plugin.saveData(plugin.settings);
+        // affects interaction immediately via params reference
+    });
+
+    // Pan Inertia Sub-option
+    createSlider(settingsContentDynamics, "Pan Inertia", 0.80, 0.99, 0.01, params.panInertia, async (val) => {
+        params.panInertia = val;
+        plugin.settings.d3PanInertia = val;
+        await plugin.saveData(plugin.settings);
+        // affects interaction immediately via params reference
+    });
+
     // 图形容器
     const graphDiv = container.createDiv({ cls: "zk-d3-graph" });
 
@@ -441,6 +505,9 @@ export function renderD3MindMap(
         let currentTransform = d3.zoomIdentity;
         if (cachedZoomTransform) {
             currentTransform = cachedZoomTransform;
+        } else if (plugin.settings.d3LastTransform) {
+            const t = plugin.settings.d3LastTransform;
+            currentTransform = d3.zoomIdentity.translate(t.x, t.y).scale(t.k);
         } else {
             // Initial center
             currentTransform = d3.zoomIdentity.translate(margin.left, height / 2).scale(1);
@@ -512,11 +579,12 @@ export function renderD3MindMap(
                 }
             });
 
-        svg.call(zoom);
+        svg.call(zoom).on("dblclick.zoom", null);
         
         // Initialize D3 state to match our starting state
         // We do this silently
         zoom.transform(svg, currentTransform);
+        g.attr("transform", currentTransform.toString());
         
         // Check initial text visibility
         if (currentTransform.k < params.textThreshold) {
@@ -537,7 +605,7 @@ export function renderD3MindMap(
             // Scale factor: 2^delta. 
             // We multiply delta to make it faster/slower. 
             // For momentum, we want to accumulate target.
-            const k = Math.pow(2, limitedDelta);
+            const k = Math.pow(2, limitedDelta * params.zoomSensitivity);
             
             // Calculate new target scale
             // Respect scaleExtent
@@ -572,11 +640,24 @@ export function renderD3MindMap(
         });
 
         let isAnimating = false;
+
+        const saveTransform = debounce(async (t: d3.ZoomTransform) => {
+            plugin.settings.d3LastTransform = { x: t.x, y: t.y, k: t.k };
+            await plugin.saveData(plugin.settings);
+        }, 1000);
         
         function tick() {
             // Physics Constants
-            const damping = 0.15; // For Lerp (Smooth Follow)
-            const friction = 0.92; // For Inertia (Fling)
+            // If scale is changing (zooming), we use zoomSmoothness for EVERYTHING to ensure K and XY stay synced (prevent drift).
+            // If scale is static (panning/dragging/inertia), we use panResponsiveness for XY.
+            
+            const kDist = targetTransform.k - currentTransform.k;
+            const isZooming = Math.abs(kDist) > 0.001;
+
+            const dampingK = params.zoomSmoothness; 
+            const dampingXY = isZooming ? params.zoomSmoothness : params.panResponsiveness;
+
+            const friction = params.panInertia; // For Inertia (Fling)
             const velocityThreshold = 0.1;
             const epsilon = 0.001;
 
@@ -594,23 +675,20 @@ export function renderD3MindMap(
                     // Apply Friction
                     velocity.x *= friction;
                     velocity.y *= friction;
-                    
-                    // Sync D3 state to prevent "jump back" on next click
-                    // We do this silently (sourceEvent will be null)
-                    zoom.transform(svg, targetTransform);
                 } else {
                     velocity = { x: 0, y: 0 };
                 }
             }
 
             // 2. Lerp: Move Current towards Target
-            const kDist = targetTransform.k - currentTransform.k;
-            const xDist = targetTransform.x - currentTransform.x;
-            const yDist = targetTransform.y - currentTransform.y;
+            // Recalculate dists (target might have moved due to inertia)
+            const distK = targetTransform.k - currentTransform.k; // use fresh var name to avoid confusion
+            const distX = targetTransform.x - currentTransform.x;
+            const distY = targetTransform.y - currentTransform.y;
 
             // Check if settled
             if (!isDragging && Math.abs(velocity.x) < velocityThreshold && Math.abs(velocity.y) < velocityThreshold && 
-                Math.abs(kDist) < epsilon && Math.abs(xDist) < epsilon && Math.abs(yDist) < epsilon) {
+                Math.abs(distK) < epsilon && Math.abs(distX) < epsilon && Math.abs(distY) < epsilon) {
                 
                 // Snap to target
                 currentTransform = targetTransform;
@@ -619,19 +697,26 @@ export function renderD3MindMap(
                 // Final render
                 g.attr("transform", currentTransform.toString());
                 cachedZoomTransform = currentTransform;
+                // Sync D3 state when settled to ensure next drag starts correctly
+                if (!isDragging) zoom.transform(svg, currentTransform);
+                
+                saveTransform(currentTransform);
                 return;
             }
 
             // Update current via Lerp
-            const nextK = currentTransform.k + kDist * damping;
-            const nextX = currentTransform.x + xDist * damping;
-            const nextY = currentTransform.y + yDist * damping;
+            const nextK = currentTransform.k + distK * dampingK;
+            const nextX = currentTransform.x + distX * dampingXY;
+            const nextY = currentTransform.y + distY * dampingXY;
 
             currentTransform = d3.zoomIdentity.translate(nextX, nextY).scale(nextK);
 
             // 3. Render
             g.attr("transform", currentTransform.toString());
             cachedZoomTransform = currentTransform;
+
+            // Sync D3 state continuously during animation so drag starts from correct position
+            if (!isDragging) zoom.transform(svg, currentTransform);
 
             // 4. Update text visibility
             if (currentTransform.k < params.textThreshold) {
