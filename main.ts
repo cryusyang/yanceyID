@@ -124,6 +124,9 @@ interface ZKNavigationSettings {
     d3NodeColor: string;
     d3FoldingNodeColor: string;
     d3HighlightNodeColor: string;
+    d3LineWidth: number;
+    d3HighlightLineColor: string;
+    d3TextThreshold: number;
 }
 
 //Default value for setting field
@@ -200,8 +203,11 @@ const DEFAULT_SETTINGS: ZKNavigationSettings = {
     d3FontSize: 12,
     d3NodeColor: "#268bd2",
     d3FoldingNodeColor: "#7950F2",
-    d3HighlightNodeColor: "#fa5252"
-}
+    d3HighlightNodeColor: "#fa5252",
+    d3LineWidth: 1.5,
+    d3HighlightLineColor: "var(--interactive-accent)",
+    d3TextThreshold: 0.6
+};
 
 export default class ZKNavigationPlugin extends Plugin {
 

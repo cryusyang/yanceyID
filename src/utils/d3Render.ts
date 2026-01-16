@@ -111,7 +111,9 @@ export function renderD3MindMap(
         nodeColor: plugin.settings.d3NodeColor || options.nodeColor || "#268bd2",
         foldingNodeColor: plugin.settings.d3FoldingNodeColor || "#7950F2",
         highlightNodeColor: plugin.settings.d3HighlightNodeColor || "#fa5252",
-        textThreshold: 0.6 // Default text visibility threshold
+        lineWidth: plugin.settings.d3LineWidth || 1.5,
+        highlightLineColor: plugin.settings.d3HighlightLineColor || "var(--interactive-accent)",
+        textThreshold: plugin.settings.d3TextThreshold || 0.6
     };
 
     // Settings Trigger Button (Top Right)
@@ -231,8 +233,11 @@ export function renderD3MindMap(
     });
 
     // 5. Text Threshold
-    createSlider(settingsContent, "Text Threshold", 0.1, 2.0, 0.1, params.textThreshold, (val) => {
+    createSlider(settingsContent, "Text Threshold", 0.1, 2.0, 0.1, params.textThreshold, async (val) => {
         params.textThreshold = val;
+        plugin.settings.d3TextThreshold = val;
+        await plugin.saveData(plugin.settings);
+        updateGraph();
     });
 
     // --- Collapsible Group: Node Color Display ---
@@ -319,6 +324,66 @@ export function renderD3MindMap(
         updateGraph();
     };
 
+    // --- Collapsible Group: Line Display Items ---
+    const groupLineDisplay = sliderContainer.createDiv({ cls: "zk-settings-group" });
+    const groupHeaderLineDisplay = groupLineDisplay.createDiv({ cls: "zk-group-header" });
+    
+    // Group Arrow
+    const arrowIconLineDisplay = groupHeaderLineDisplay.createDiv({ cls: "zk-group-arrow" });
+    setIcon(arrowIconLineDisplay, "chevron-right"); // Default closed
+    
+    // Group Title
+    groupHeaderLineDisplay.createSpan({ text: "Line Display Items", cls: "zk-group-title" });
+
+    // Content Area
+    const settingsContentLineDisplay = groupLineDisplay.createDiv({ cls: "zk-group-content" });
+    settingsContentLineDisplay.style.display = "none"; // Default hidden
+
+    // Toggle Logic
+    let isOpenLineDisplay = false; 
+    groupHeaderLineDisplay.onclick = () => {
+        isOpenLineDisplay = !isOpenLineDisplay;
+        if (isOpenLineDisplay) {
+            settingsContentLineDisplay.style.display = "block";
+            setIcon(arrowIconLineDisplay, "chevron-down");
+        } else {
+            settingsContentLineDisplay.style.display = "none";
+            setIcon(arrowIconLineDisplay, "chevron-right");
+        }
+    };
+
+    // Line Thickness Sub-option
+    createSlider(settingsContentLineDisplay, "Line Thickness", 0.5, 10, 0.5, params.lineWidth, async (val) => {
+        params.lineWidth = val;
+        plugin.settings.d3LineWidth = val;
+        await plugin.saveData(plugin.settings);
+        updateGraph();
+    });
+
+    // Activated Line Color Sub-option
+    const activatedLineColorRow = settingsContentLineDisplay.createDiv({ cls: "zk-color-row" });
+    activatedLineColorRow.createDiv({ text: "Activated Line Color", cls: "zk-color-label" });
+
+    const activatedLineColorInput = activatedLineColorRow.createEl("input", {
+        type: "color",
+        cls: "zk-color-input"
+    });
+    // Handle CSS variable default
+    const currentColor = plugin.settings.d3HighlightLineColor.startsWith("var") 
+        ? "#7950F2" // Default fallback if var() is used (browser color picker doesn't support var())
+        : plugin.settings.d3HighlightLineColor;
+    activatedLineColorInput.value = currentColor;
+
+    activatedLineColorInput.oninput = async (e) => {
+        const val = (e.target as HTMLInputElement).value;
+        params.highlightLineColor = val;
+        plugin.settings.d3HighlightLineColor = val;
+        await plugin.saveData(plugin.settings);
+        // No need to updateGraph immediately as this affects hover state only, 
+        // but updating ensures params are fresh if we re-render elsewhere.
+        // updateGraph(); 
+    };
+
     // 图形容器
     const graphDiv = container.createDiv({ cls: "zk-d3-graph" });
 
@@ -365,26 +430,219 @@ export function renderD3MindMap(
             .attr("height", height)
             .attr("viewBox", [-margin.left, -margin.top, width, height])
             .style("font", `${params.fontSize}px sans-serif`)
-            .style("user-select", "none");
+            .style("user-select", "none")
+            .style("cursor", "move"); // Improve cursor feedback
 
         const g = svg.append("g");
 
+        // --- Physics-based Zoom Implementation ---
+        
+        // State variables for physics loop
+        let currentTransform = d3.zoomIdentity;
+        if (cachedZoomTransform) {
+            currentTransform = cachedZoomTransform;
+        } else {
+            // Initial center
+            currentTransform = d3.zoomIdentity.translate(margin.left, height / 2).scale(1);
+        }
+        
+        // Target transform starts equal to current
+        let targetTransform = currentTransform;
+
+        // Physics State
+        let isDragging = false;
+        let velocity = { x: 0, y: 0 };
+        let lastTargetTransform = currentTransform;
+
         const zoom = d3.zoom<SVGSVGElement, unknown>()
             .scaleExtent([0.1, 8])
+            .filter((event) => {
+                // Disable default wheel handling to implement custom physics
+                return !event.type.includes("wheel");
+            })
+            .on("start", (event) => {
+                // Check if this is a user-initiated drag (mouse/touch)
+                if (event.sourceEvent && (event.sourceEvent.type === "mousedown" || event.sourceEvent.type === "touchstart")) {
+                    isDragging = true;
+                    velocity = { x: 0, y: 0 };
+                    // Reset tracking
+                    lastTargetTransform = event.transform; 
+                    
+                    // Sync target immediately to prevent jumps
+                    targetTransform = event.transform;
+                    
+                    // Start loop if needed
+                    if (!isAnimating) {
+                        isAnimating = true;
+                        requestAnimationFrame(tick);
+                    }
+                }
+            })
             .on("zoom", (event) => {
-                g.attr("transform", event.transform);
-                cachedZoomTransform = event.transform;
+                const transform = event.transform;
+
+                // Handle updates from D3
+                // If the event is user-initiated dragging (mousemove/touch), we treat it as input for target
+                if (event.sourceEvent && (event.sourceEvent.type === "mousemove" || event.sourceEvent.type === "touchmove")) {
+                    // Calculate instantaneous velocity (delta per event)
+                    // We will use this on release
+                    velocity = {
+                        x: transform.x - lastTargetTransform.x,
+                        y: transform.y - lastTargetTransform.y
+                    };
+                    
+                    lastTargetTransform = transform;
+                    targetTransform = transform;
+                    
+                    // During drag, we DO NOT snap currentTransform to target.
+                    // We let the Lerp loop in tick() handle the "smooth follow".
+                } 
+                else if (!event.sourceEvent) {
+                     // Programmatic zoom (e.g. wheel physics or inertia sync)
+                     // We ignore this here because we drive the rendering in tick()
+                }
+
+                // Note: We deliberately do NOT update DOM here. 
+                // The tick() loop handles all rendering.
+            })
+            .on("end", (event) => {
+                if (isDragging) {
+                    isDragging = false;
+                    // On release, we enter inertia phase with the last calculated velocity
+                }
             });
 
         svg.call(zoom);
+        
+        // Initialize D3 state to match our starting state
+        // We do this silently
+        zoom.transform(svg, currentTransform);
+        
+        // Check initial text visibility
+        if (currentTransform.k < params.textThreshold) {
+            graphDiv.classList.add("zk-text-hidden");
+        }
 
-        // Restore Zoom State or Initialize
-        if (cachedZoomTransform) {
-            // Restore previous state immediately (no animation)
-            svg.call(zoom.transform, cachedZoomTransform);
-        } else {
-            // First render: center the view
-            svg.call(zoom.transform, d3.zoomIdentity.translate(margin.left, height / 2).scale(1));
+        // Custom Wheel Listener for Momentum Zoom
+        svg.on("wheel", (event) => {
+            event.preventDefault();
+
+            // Calculate wheel delta with normalization
+            // Similar to D3's internal normalization but simplified
+            const wheelDelta = -event.deltaY * (event.deltaMode === 1 ? 0.05 : event.deltaMode ? 1 : 0.002);
+            
+            // Limit max speed per event to avoid uncontrollable jumps
+            const limitedDelta = Math.max(-1, Math.min(1, wheelDelta));
+            
+            // Scale factor: 2^delta. 
+            // We multiply delta to make it faster/slower. 
+            // For momentum, we want to accumulate target.
+            const k = Math.pow(2, limitedDelta);
+            
+            // Calculate new target scale
+            // Respect scaleExtent
+            const extent = zoom.scaleExtent();
+            let newK = targetTransform.k * k;
+            
+            // Clamp k
+            if (newK < extent[0]) newK = extent[0];
+            if (newK > extent[1]) newK = extent[1];
+            
+            // Calculate new target translate to keep mouse point fixed
+            // Mouse position relative to SVG
+            const [mx, my] = d3.pointer(event, svg.node());
+            
+            // World position (relative to g) before zoom
+            // world = (mouse - translate) / scale
+            const wx = (mx - targetTransform.x) / targetTransform.k;
+            const wy = (my - targetTransform.y) / targetTransform.k;
+            
+            // New translate: mouse - world * newScale
+            const newX = mx - wx * newK;
+            const newY = my - wy * newK;
+            
+            // Update target
+            targetTransform = d3.zoomIdentity.translate(newX, newY).scale(newK);
+            
+            // Start animation loop if not running
+            if (!isAnimating) {
+                isAnimating = true;
+                requestAnimationFrame(tick);
+            }
+        });
+
+        let isAnimating = false;
+        
+        function tick() {
+            // Physics Constants
+            const damping = 0.15; // For Lerp (Smooth Follow)
+            const friction = 0.92; // For Inertia (Fling)
+            const velocityThreshold = 0.1;
+            const epsilon = 0.001;
+
+            // 1. Handle Inertia (When not dragging)
+            if (!isDragging) {
+                if (Math.abs(velocity.x) > velocityThreshold || Math.abs(velocity.y) > velocityThreshold) {
+                    // Apply velocity to target
+                    // Note: velocity is in "screen pixels" since it came from d3 transform delta
+                    // We just add it to target's x/y
+                    const nextX = targetTransform.x + velocity.x;
+                    const nextY = targetTransform.y + velocity.y;
+                    
+                    targetTransform = d3.zoomIdentity.translate(nextX, nextY).scale(targetTransform.k);
+                    
+                    // Apply Friction
+                    velocity.x *= friction;
+                    velocity.y *= friction;
+                    
+                    // Sync D3 state to prevent "jump back" on next click
+                    // We do this silently (sourceEvent will be null)
+                    zoom.transform(svg, targetTransform);
+                } else {
+                    velocity = { x: 0, y: 0 };
+                }
+            }
+
+            // 2. Lerp: Move Current towards Target
+            const kDist = targetTransform.k - currentTransform.k;
+            const xDist = targetTransform.x - currentTransform.x;
+            const yDist = targetTransform.y - currentTransform.y;
+
+            // Check if settled
+            if (!isDragging && Math.abs(velocity.x) < velocityThreshold && Math.abs(velocity.y) < velocityThreshold && 
+                Math.abs(kDist) < epsilon && Math.abs(xDist) < epsilon && Math.abs(yDist) < epsilon) {
+                
+                // Snap to target
+                currentTransform = targetTransform;
+                isAnimating = false;
+                
+                // Final render
+                g.attr("transform", currentTransform.toString());
+                cachedZoomTransform = currentTransform;
+                return;
+            }
+
+            // Update current via Lerp
+            const nextK = currentTransform.k + kDist * damping;
+            const nextX = currentTransform.x + xDist * damping;
+            const nextY = currentTransform.y + yDist * damping;
+
+            currentTransform = d3.zoomIdentity.translate(nextX, nextY).scale(nextK);
+
+            // 3. Render
+            g.attr("transform", currentTransform.toString());
+            cachedZoomTransform = currentTransform;
+
+            // 4. Update text visibility
+            if (currentTransform.k < params.textThreshold) {
+                graphDiv.classList.add("zk-text-hidden");
+            } else {
+                graphDiv.classList.remove("zk-text-hidden");
+            }
+
+            if (isAnimating) {
+                requestAnimationFrame(tick);
+            }
         }
 
         const root = d3.hierarchy<TreeData>(data);
@@ -402,7 +660,7 @@ export function renderD3MindMap(
                 .y(d => d.x))
             .style("fill", "none")
             .style("stroke", "#ccc")
-            .style("stroke-width", "1.5px")
+            .style("stroke-width", `${params.lineWidth}px`)
             .style("transition", "stroke 0.2s, stroke-width 0.2s");
 
         const node = g.selectAll(".node")
@@ -449,6 +707,7 @@ export function renderD3MindMap(
             .style("text-anchor", "middle")
             .text(d => d.data.displayText)
             .style("fill", "var(--text-normal)")
+            // .style("opacity", ...) managed by CSS class on graphDiv
             .style("font-size", `${params.fontSize}px`)
             .style("font-family", "var(--font-interface)")
             .style("cursor", "pointer")
@@ -653,8 +912,8 @@ export function renderD3MindMap(
              // Parent link: target is d
              // Child link: source is d
              link.filter(l => l.target === d || l.source === d)
-                 .style("stroke", "var(--interactive-accent)")
-                 .style("stroke-width", "3px");
+                 .style("stroke", params.highlightLineColor)
+                 .style("stroke-width", `${Math.max(3, params.lineWidth + 1.5)}px`);
 
              plugin.app.workspace.trigger('hover-link', {
                  event,
@@ -668,7 +927,7 @@ export function renderD3MindMap(
         .on("mouseout", (event: MouseEvent, d: d3.HierarchyPointNode<TreeData>) => {
              // Reset highlights
              link.style("stroke", "#ccc")
-                 .style("stroke-width", "1.5px");
+                 .style("stroke-width", `${params.lineWidth}px`);
         });
     }
 }

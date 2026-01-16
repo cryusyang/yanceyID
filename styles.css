@@ -506,6 +506,11 @@
     transition: opacity 0.2s ease-in-out;
 }
 
+/* Hide text when zoomed out */
+.zk-d3-graph.zk-text-hidden .node text {
+    opacity: 0;
+}
+
 /* Tooltip Styles */
 .zk-node-tooltip {
     position: absolute;
