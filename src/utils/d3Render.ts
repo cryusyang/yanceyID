@@ -1,7 +1,7 @@
 import * as d3 from "d3";
 import { ZKNode } from "../view/indexView";
 import ZKNavigationPlugin from "../../main";
-import { Menu, moment, Notice } from "obsidian";
+import { Menu, moment, Notice, setIcon } from "obsidian";
 import { TooltipManager } from "./tooltipManager";
 import { YanceyID } from "./yanceyId";
 
@@ -111,101 +111,125 @@ export function renderD3MindMap(
         textThreshold: 0.6 // Default text visibility threshold
     };
 
-    // 滑块容器 - 使用简单的 div，放在最顶部
+    // Settings Trigger Button (Top Right)
+    const settingsTrigger = container.createDiv({ cls: "zk-settings-trigger" });
+    setIcon(settingsTrigger, "sliders-horizontal");
+    settingsTrigger.onclick = () => {
+        sliderContainer.style.display = "block";
+        settingsTrigger.style.display = "none";
+    };
+
+    // --- Settings Panel ---
     const sliderContainer = container.createDiv({ cls: "zk-slider-container" });
+    sliderContainer.style.display = "none";
+
+    // Header Bar (Fixed at top of panel)
+    const panelHeader = sliderContainer.createDiv({ cls: "zk-panel-header" });
     
-    // 垂直间距滑块
-    const verticalControl = sliderContainer.createDiv({ cls: "zk-slider-control" });
-    verticalControl.createSpan({ text: "垂直间距: ", cls: "zk-slider-label" });
-    const verticalValue = verticalControl.createSpan({ text: params.siblingSep.toString(), cls: "zk-slider-value" });
-    const verticalSlider = verticalControl.createEl("input", { 
-        type: "range",
-        cls: "zk-slider"
-    });
-    verticalSlider.min = "10";
-    verticalSlider.max = "100";
-    verticalSlider.value = params.siblingSep.toString();
-    verticalSlider.oninput = async (e) => {
-        const val = parseInt((e.target as HTMLInputElement).value);
-        verticalValue.innerText = val.toString();
+    // Header Left: Title
+    panelHeader.createSpan({ text: "Main View Settings", cls: "zk-panel-title" });
+
+    // Header Right: Close Button
+    const closeBtn = panelHeader.createDiv({ cls: "zk-settings-close" });
+    setIcon(closeBtn, "x");
+    closeBtn.onclick = (e) => {
+        e.stopPropagation(); 
+        sliderContainer.style.display = "none";
+        settingsTrigger.style.display = "flex";
+    };
+
+    // --- Collapsible Group: Display ---
+    const groupDisplay = sliderContainer.createDiv({ cls: "zk-settings-group" });
+    const groupHeader = groupDisplay.createDiv({ cls: "zk-group-header" });
+    
+    // Group Arrow
+    const arrowIcon = groupHeader.createDiv({ cls: "zk-group-arrow" });
+    setIcon(arrowIcon, "chevron-right"); // Default closed
+    
+    // Group Title
+    groupHeader.createSpan({ text: "Basic Display Items", cls: "zk-group-title" });
+
+    // Content Area
+    const settingsContent = groupDisplay.createDiv({ cls: "zk-group-content" });
+    settingsContent.style.display = "none"; // Default hidden
+
+    // Toggle Logic
+    let isOpen = false; 
+    groupHeader.onclick = () => {
+        isOpen = !isOpen;
+        if (isOpen) {
+            settingsContent.style.display = "block";
+            setIcon(arrowIcon, "chevron-down");
+        } else {
+            settingsContent.style.display = "none";
+            setIcon(arrowIcon, "chevron-right");
+        }
+    };
+
+    // --- Slider Helper (No Numbers) ---
+    function createSlider(
+        labelText: string,
+        min: number,
+        max: number,
+        step: number,
+        initialValue: number,
+        onChange: (val: number) => void
+    ) {
+        const wrapper = settingsContent.createDiv({ cls: "zk-slider-control" });
+        
+        // Label only
+        wrapper.createDiv({ text: labelText, cls: "zk-slider-label" });
+        
+        const slider = wrapper.createEl("input", {
+            type: "range",
+            cls: "zk-slider"
+        });
+        slider.min = String(min);
+        slider.max = String(max);
+        slider.step = String(step);
+        slider.value = String(initialValue);
+        slider.oninput = (e) => {
+            const val = parseFloat((e.target as HTMLInputElement).value);
+            onChange(val);
+        };
+    }
+
+    // 1. Vertical Spacing
+    createSlider("Vertical Spacing", 10, 100, 1, params.siblingSep, async (val) => {
         params.siblingSep = val;
         plugin.settings.d3SiblingSeparation = val;
         await plugin.saveData(plugin.settings);
         updateGraph();
-    };
-
-    // 水平间距滑块
-    const horizontalControl = sliderContainer.createDiv({ cls: "zk-slider-control" });
-    horizontalControl.createSpan({ text: "水平间距: ", cls: "zk-slider-label" });
-    const horizontalValue = horizontalControl.createSpan({ text: params.levelSep.toString(), cls: "zk-slider-value" });
-    const horizontalSlider = horizontalControl.createEl("input", { 
-        type: "range",
-        cls: "zk-slider"
     });
-    horizontalSlider.min = "50";
-    horizontalSlider.max = "400";
-    horizontalSlider.value = params.levelSep.toString();
-    horizontalSlider.oninput = async (e) => {
-        const val = parseInt((e.target as HTMLInputElement).value);
-        horizontalValue.innerText = val.toString();
+
+    // 2. Horizontal Spacing
+    createSlider("Horizontal Spacing", 50, 400, 10, params.levelSep, async (val) => {
         params.levelSep = val;
         plugin.settings.d3LevelSeparation = val;
         await plugin.saveData(plugin.settings);
         updateGraph();
-    };
-
-    // 节点大小滑块
-    const nodeSizeControl = sliderContainer.createDiv({ cls: "zk-slider-control" });
-    nodeSizeControl.createSpan({ text: "节点大小: ", cls: "zk-slider-label" });
-    const nodeSizeValue = nodeSizeControl.createSpan({ text: params.nodeRadius.toString(), cls: "zk-slider-value" });
-    const nodeSizeSlider = nodeSizeControl.createEl("input", { 
-        type: "range",
-        cls: "zk-slider"
     });
-    nodeSizeSlider.min = "3";
-    nodeSizeSlider.max = "15";
-    nodeSizeSlider.value = params.nodeRadius.toString();
-    nodeSizeSlider.oninput = async (e) => {
-        const val = parseInt((e.target as HTMLInputElement).value);
-        nodeSizeValue.innerText = val.toString();
+
+    // 3. Node Size
+    createSlider("Node Size", 3, 15, 1, params.nodeRadius, async (val) => {
         params.nodeRadius = val;
         plugin.settings.d3NodeRadius = val;
         await plugin.saveData(plugin.settings);
         updateGraph();
-    };
-
-    // 文字大小滑块
-    const fontSizeControl = sliderContainer.createDiv({ cls: "zk-slider-control" });
-    fontSizeControl.createSpan({ text: "文字大小: ", cls: "zk-slider-label" });
-    const fontSizeValue = fontSizeControl.createSpan({ text: params.fontSize.toString(), cls: "zk-slider-value" });
-    const fontSizeSlider = fontSizeControl.createEl("input", { 
-        type: "range",
-        cls: "zk-slider"
     });
-    fontSizeSlider.min = "8";
-    fontSizeSlider.max = "20";
-    fontSizeSlider.value = params.fontSize.toString();
-    fontSizeSlider.oninput = async (e) => {
-        const val = parseInt((e.target as HTMLInputElement).value);
-        fontSizeValue.innerText = val.toString();
+
+    // 4. Font Size
+    createSlider("Font Size", 8, 20, 1, params.fontSize, async (val) => {
         params.fontSize = val;
         plugin.settings.d3FontSize = val;
         await plugin.saveData(plugin.settings);
         updateGraph();
-    };
-
-    // 文字阈值滑块
-    const thresholdControl = sliderContainer.createDiv({ cls: "zk-slider-control" });
-    thresholdControl.createSpan({ text: "文字阈值: ", cls: "zk-slider-label" });
-    const thresholdValue = thresholdControl.createSpan({ text: params.textThreshold.toString(), cls: "zk-slider-value" });
-    const thresholdSlider = thresholdControl.createEl("input", { 
-        type: "range",
-        cls: "zk-slider"
     });
-    thresholdSlider.min = "0.1";
-    thresholdSlider.max = "2.0";
-    thresholdSlider.step = "0.1";
-    thresholdSlider.value = params.textThreshold.toString();
+
+    // 5. Text Threshold
+    createSlider("Text Threshold", 0.1, 2.0, 0.1, params.textThreshold, (val) => {
+        params.textThreshold = val;
+    });
 
     // 图形容器
     const graphDiv = container.createDiv({ cls: "zk-d3-graph" });

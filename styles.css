@@ -256,64 +256,224 @@
   width: calc(100% - 20px);
 }
 
-/* 滑块容器 - 固定在左下角 */
+/* --- Native Graph View Imitation --- */
+
+/* Main Container */
 .zk-slider-container {
   position: absolute !important;
-  top: auto !important;
-  bottom: 20px !important;
-  left: 5px !important;
-  background-color: var(--background-primary);
+  top: 45px !important;
+  right: 15px !important;
+  bottom: auto !important;
+  left: auto !important;
+  background-color: var(--background-secondary);
   border: 1px solid var(--background-modifier-border);
-  padding: 10px 12px;
+  padding: 0;
   border-radius: 6px;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
   z-index: 2000;
-  width: 130px;
-  display: block !important;
+  width: 240px; /* Slightly wider like native */
+  overflow: hidden;
+  font-size: 13px;
 }
 
-/* 单个滑块控制 */
+/* Panel Header (Top Row with Title + Close) */
+.zk-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background-color: var(--background-secondary-alt);
+}
+
+.zk-panel-title {
+  font-weight: 600;
+  color: var(--text-normal);
+}
+
+/* Close Button (Top Right) */
+.zk-settings-close {
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  position: relative;
+  top: -14px; /* Visual correction to align with title text */
+}
+
+.zk-settings-close:hover {
+  color: var(--text-normal);
+  background-color: transparent; /* Removed hover background */
+}
+
+.zk-settings-close svg {
+  width: 14px;
+  height: 14px;
+  display: block;
+}
+
+/* Group Container */
+.zk-settings-group {
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.zk-settings-group:last-child {
+  border-bottom: none;
+}
+
+/* Group Header (Collapsible) */
+.zk-group-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
+  cursor: pointer;
+  background-color: transparent;
+  user-select: none;
+  transition: background-color 0.1s ease;
+}
+
+.zk-group-header:hover {
+  background-color: var(--background-modifier-hover);
+}
+
+.zk-group-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: var(--text-muted);
+  width: 16px;
+  height: 16px;
+  margin-right: 6px;
+  transition: transform 0.2s ease;
+  position: relative;
+  top: -14px; /* Visual correction to align with group title */
+}
+
+.zk-group-arrow svg {
+  width: 10px;
+  height: 10px;
+  display: block;
+}
+
+.zk-group-title {
+  font-weight: 600;
+  color: var(--text-normal);
+  flex: 1;
+  position: relative;
+  left: -7px;
+}
+
+/* Content Area */
+.zk-group-content {
+  padding: 8px 12px 12px 12px; /* Right padding 12px to match left padding */
+  background-color: var(--background-primary);
+}
+
+/* Slider Control */
 .zk-slider-control {
-  margin-bottom: 10px;
+  margin-bottom: 13px; /* Increased spacing */
   display: flex;
   flex-direction: column;
-  gap: 4px;
 }
 
 .zk-slider-control:last-child {
   margin-bottom: 0;
 }
 
-/* 滑块标签 */
 .zk-slider-label {
   font-size: 12px;
-  color: var(--text-normal);
-  font-weight: 500;
+  color: var(--text-muted);
+  margin-bottom: 12px; /* Increased spacing */
 }
 
-/* 滑块数值显示 */
-.zk-slider-value {
-  display: none;
-}
-
-/* 滑块样式 */
+/* Native-like Range Input */
 .zk-slider {
   -webkit-appearance: none;
-  width: 100%;
+  appearance: none;
+  width: 100% !important; /* Force override Obsidian defaults */
+  max-width: 100% !important;
   height: 4px;
   background: var(--background-modifier-border);
   border-radius: 2px;
   outline: none;
-  margin-top: 4px;
+  cursor: pointer;
+  margin: 0;
+  box-sizing: border-box; 
+  display: block; 
 }
 
 .zk-slider::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
-  width: 14px;
-  height: 14px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--interactive-accent);
+  cursor: pointer;
+  border: 2px solid var(--background-primary);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  margin-top: -2px; /* Align thumb vertically */
+}
+
+.zk-slider::-webkit-slider-runnable-track {
+  width: 100%;
+  height: 4px;
+  cursor: pointer;
+  background: var(--background-modifier-border);
+  border-radius: 2px;
+}
+
+.zk-slider:hover::-webkit-slider-thumb {
+  transform: scale(1.1);
+}
+
+/* Trigger Button */
+.zk-settings-trigger {
+  position: absolute;
+  top: 45px;
+  right: 15px;
+  z-index: 1999;
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  transition: color 0.2s ease;
+}
+
+.zk-settings-trigger svg {
+  width: 18px;
+  height: 18px;
+  display: block;
+  min-width: 18px;
+  min-height: 18px;
+}
+
+.zk-settings-trigger:hover {
+  background-color: transparent; /* Explicitly removed hover background */
+  color: var(--text-normal);
+}
+
+.zk-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #7950F2;
   cursor: pointer;
   transition: transform 0.1s;
 }
@@ -323,10 +483,10 @@
 }
 
 .zk-slider::-moz-range-thumb {
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
-  background: var(--interactive-accent);
+  background: #7950F2;
   cursor: pointer;
   border: none;
 }

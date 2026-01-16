@@ -156,8 +156,8 @@ export class TooltipManager {
     private startFadeOut() {
         if (!this.tooltipEl) return;
 
-        // 2.0s fade out
-        this.tooltipEl.style.transition = "opacity 2.0s ease-out";
+        // 0.3s fade out (Faster speed)
+        this.tooltipEl.style.transition = "opacity 0.3s ease-out";
         this.tooltipEl.style.opacity = "0";
 
         // Remove from DOM after transition
@@ -167,6 +167,6 @@ export class TooltipManager {
                 this.tooltipEl.remove();
                 this.tooltipEl = null;
             }
-        }, 2000);
+        }, 300);
     }
 }
